@@ -1,0 +1,305 @@
+
+= Helm
+
+Application packaging and management for Kubernetes
+
+:imagesdir: images
+
+== What is Helm?
+
+
+* Helm Charts helps you define, install, and upgrade Kubernetes application.
+* Charts are easy to create, version, share, and publish 
+* The latest version of Helm is maintained by the https://www.cncf.io/[CNCF] 
+
+== But.. what does it do?
+
+[%step]
+. Generates k8s API, using YAML templates
+. Manages the application life-cycle using Tiller
+
+== Templating
+
+=== Helm chart
+
+----
+├── .travis.yml
+├── deployment
+│   └── chart
+│       ├── Chart.yaml          <-- Chart metadata
+│       ├── templates
+│       │   ├── deployment.yaml
+│       │   ├── ingress.yaml
+│       │   └── service.yaml
+│       └── values.yaml         <-- Default deploy values 
+├── src
+│   ├── ..
+│   ├── ..
+----
+
+=== Sample API
+
+[source, yaml]
+----
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-deployment
+  labels:
+    app: nginx
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:1.7.9
+        ports:
+        - containerPort: 80
+----
+
+=== Sample template
+
+
+[source, yaml]
+----
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ template "fullname" . }}
+  labels:
+    app: {{ template "name" . }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ template "name" . }}
+  template:
+    metadata:
+      labels:
+        app: {{ template "name" . }}
+    spec:
+      containers:
+      - name: {{ .Chart.Name }}
+        image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
+        ports:
+        - containerPort: {{ .Values.service.internalPort }}
+----
+
+
+=== Demo
+
+----
+#
+# Example installation
+# 
+helm install deployment/chart --name myrelease \
+   --set image.tag="$TRAVIS_COMMIT" \
+   --set replicaCount=5
+----
+
+=== Generated YAML
+
+----
+$ helm install deployment/chart --name=myrelease \
+   --set image.tag=1.2.99 \
+   --set replicaCount=5 \
+   --dry-run \
+   --debug 
+
+..
+..
+
+---
+# Source: chart/templates/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: myrelease-chart
+  labels:
+    app: chart
+spec:
+  replicas: 5
+  selector:
+    matchLabels:
+      app: chart
+  template:
+    metadata:
+      labels:
+        app: chart
+    spec:
+      containers:
+      - name: chart
+        image: nginx:1.2.99
+        ports:
+        - containerPort: 80
+
+----
+
+
+== Manage application life-cycle
+
+image::https://lh4.googleusercontent.com/IY0KZdxLY68WNo5xSG5Cug36Ntu_NDIvGur6-UoSF5B53Jr1uUhY9Hx43-sx2CqpNouryW7hcWCC6kLMnUBiJ7BpDrh7Pfevm6bpJGksYH_TZltv5rVyaQdOwG6OQzL4EetEgWAh[]
+
+
+=== Life cycle actions
+
+[%step]
+. install
+. rollback
+. upgrade
+. delete
+
+=== And other features
+
+[%step]
+* ls
+* search
+* create
+* package
+* init
+
+
+== Demo
+
+=== Installation
+
+. Install minikube
+. Install kubectl
+. Install helm
+
+=== Setup
+
+----
+#
+# Create a k8s cluster
+#
+minikube start
+
+#
+# Install Tiller
+#
+helm init
+----
+
+=== Find software
+
+----
+$ helm search jenkins
+NAME          	VERSION	DESCRIPTION                                       
+stable/jenkins	0.13.1 	Open source continuous integration server. It s...
+
+$ helm search mariadb
+NAME          	VERSION	DESCRIPTION                                       
+stable/mariadb	2.1.3  	Fast, reliable, scalable, and easy to use open-...
+
+$ helm search redis
+NAME           	VERSION	DESCRIPTION                                       
+stable/redis   	1.1.11 	Open source, advanced key-value store. It is of...
+stable/redis-ha	2.0.0  	Highly available Redis cluster with multiple se...
+stable/sensu   	0.2.0  	Sensu monitoring framework backed by the Redis ...
+----
+
+
+=== Install Drupal
+
+----
+$ helm install stable/drupal
+NAME:   elder-mongoose
+LAST DEPLOYED: Thu Feb 15 18:16:41 2018
+NAMESPACE: default
+STATUS: DEPLOYED
+
+RESOURCES:
+==> v1beta1/Deployment
+NAME                    DESIRED  CURRENT  UP-TO-DATE  AVAILABLE  AGE
+elder-mongoose-mariadb  1        1        1           0          0s
+elder-mongoose-drupal   1        1        1           0          0s
+
+==> v1/Secret
+NAME                    TYPE    DATA  AGE
+elder-mongoose-mariadb  Opaque  2     0s
+elder-mongoose-drupal   Opaque  1     0s
+
+==> v1/ConfigMap
+NAME                          DATA  AGE
+elder-mongoose-mariadb        1     0s
+elder-mongoose-mariadb-tests  1     0s
+
+==> v1/PersistentVolumeClaim
+NAME                          STATUS   VOLUME    CAPACITY  ACCESSMODES  STORAGECLASS  AGE
+elder-mongoose-mariadb        Pending  standard  0s
+elder-mongoose-drupal-apache  Pending  standard  0s
+elder-mongoose-drupal-drupal  Pending  standard  0s
+
+==> v1/Service
+NAME                    CLUSTER-IP     EXTERNAL-IP  PORT(S)                     AGE
+elder-mongoose-mariadb  10.100.44.33   <none>       3306/TCP                    0s
+elder-mongoose-drupal   10.97.213.180  <pending>    80:31363/TCP,443:31280/TCP  0s
+
+
+NOTES:
+
+*******************************************************************
+*** PLEASE BE PATIENT: Drupal may take a few minutes to install ***
+*******************************************************************
+
+1. Get the Drupal URL:
+
+  NOTE: It may take a few minutes for the LoadBalancer IP to be available.
+        Watch the status with: 'kubectl get svc --namespace default -w elder-mongoose-drupal'
+
+  export SERVICE_IP=$(kubectl get svc --namespace default elder-mongoose-drupal -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+  echo http://$SERVICE_IP/
+
+2. Login with the following credentials
+
+  echo Username: user
+  echo Password: $(kubectl get secret --namespace default elder-mongoose-drupal -o jsonpath="{.data.drupal-password}" | base64 --decode)
+-
+----
+
+=== Show running "Releases"
+
+----
+$ helm ls
+NAME          	REVISION	UPDATED                 	STATUS  	CHART        	NAMESPACE
+elder-mongoose	1       	Thu Feb 15 18:16:41 2018	DEPLOYED	drupal-0.11.3	default  
+----
+
+=== What was installed?
+
+----
+$ kubectl get all
+NAME                            DESIRED   CURRENT   UP-TO-DATE   AVAILABLE   AGE
+deploy/elder-mongoose-drupal    1         1         1            1           4m
+deploy/elder-mongoose-mariadb   1         1         1            1           4m
+
+NAME                                   DESIRED   CURRENT   READY     AGE
+rs/elder-mongoose-drupal-66cdb756d9    1         1         1         4m
+rs/elder-mongoose-mariadb-75fb855579   1         1         1         4m
+
+NAME                            DESIRED   CURRENT   UP-TO-DATE   AVAILABLE   AGE
+deploy/elder-mongoose-drupal    1         1         1            1           4m
+deploy/elder-mongoose-mariadb   1         1         1            1           4m
+
+NAME                                   DESIRED   CURRENT   READY     AGE
+rs/elder-mongoose-drupal-66cdb756d9    1         1         1         4m
+rs/elder-mongoose-mariadb-75fb855579   1         1         1         4m
+
+NAME                                         READY     STATUS    RESTARTS   AGE
+po/elder-mongoose-drupal-66cdb756d9-jvgzr    1/1       Running   0          4m
+po/elder-mongoose-mariadb-75fb855579-nvtzd   1/1       Running   0          4m
+
+NAME                         TYPE           CLUSTER-IP      EXTERNAL-IP   PORT(S)                      AGE
+svc/elder-mongoose-drupal    LoadBalancer   10.97.213.180   <pending>     80:31363/TCP,443:31280/TCP   4m
+svc/elder-mongoose-mariadb   ClusterIP      10.100.44.33    <none>        3306/TCP                     4m
+svc/kubernetes               ClusterIP      10.96.0.1       <none>        443/TCP                      39m
+----
+
