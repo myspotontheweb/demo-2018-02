@@ -1,7 +1,7 @@
-source 'https://rubygems.org'
+source "https://rubygems.org"
 
-gem 'asciidoctor'
-gem 'tilt'
-gem 'asciidoctor-diagram'
-gem 'thread_safe'
-gem 'asciidoctor-revealjs'
+gem "asciidoctor"
+gem "asciidoctor-revealjs"
+gem "tilt"
+gem "asciidoctor-diagram"
+gem "slim"
