@@ -15,8 +15,8 @@ $(BINDIR)/asciidoctor-reveal.js:
 
 $(OUTDIR)/reveal.js: 
 	mkdir $(OUTDIR)
-	curl -L https://github.com/hakimel/reveal.js/archive/3.6.0.tar.gz | tar zxv -C $(OUTDIR) 
-	mv -f $(OUTDIR)/reveal.js-3.6.0 $@
+	curl -L https://github.com/hakimel/reveal.js/archive/3.6.0.tar.gz | tar zxv 
+	mv -f reveal.js-3.6.0 $@
 
 $(OUTDIR)/%.html: %.adoc $(BINDIR)/asciidoctor-reveal.js $(OUTDIR)/reveal.js
 	asciidoctor -T $(BINDIR)/asciidoctor-reveal.js/templates -r asciidoctor-diagram -b revealjs $< -o $@
