@@ -195,9 +195,7 @@ $ helm search jenkins
 NAME          	VERSION	DESCRIPTION                                       
 stable/jenkins	0.13.1 	Open source continuous integration server. It s...
 
-$ helm search mariadb
-NAME          	VERSION	DESCRIPTION                                       
-stable/mariadb	2.1.3  	Fast, reliable, scalable, and easy to use open-...
+
 
 $ helm search redis
 NAME           	VERSION	DESCRIPTION                                       
@@ -207,99 +205,76 @@ stable/sensu   	0.2.0  	Sensu monitoring framework backed by the Redis ...
 ----
 
 
-=== Install Drupal
+=== Install Wordpress
 
 ----
-$ helm install stable/drupal
-NAME:   elder-mongoose
-LAST DEPLOYED: Thu Feb 15 18:16:41 2018
+$ helm install stable/wordpress --name wordpress
+NAME:   wordpress
+LAST DEPLOYED: Sun May 27 21:07:09 2018
 NAMESPACE: default
 STATUS: DEPLOYED
 
 RESOURCES:
-==> v1beta1/Deployment
-NAME                    DESIRED  CURRENT  UP-TO-DATE  AVAILABLE  AGE
-elder-mongoose-mariadb  1        1        1           0          0s
-elder-mongoose-drupal   1        1        1           0          0s
-
-==> v1/Secret
-NAME                    TYPE    DATA  AGE
-elder-mongoose-mariadb  Opaque  2     0s
-elder-mongoose-drupal   Opaque  1     0s
-
 ==> v1/ConfigMap
-NAME                          DATA  AGE
-elder-mongoose-mariadb        1     0s
-elder-mongoose-mariadb-tests  1     0s
+NAME                     DATA  AGE
+wordpress-mariadb        1     0s
+wordpress-mariadb-tests  1     0s
 
 ==> v1/PersistentVolumeClaim
-NAME                          STATUS   VOLUME    CAPACITY  ACCESSMODES  STORAGECLASS  AGE
-elder-mongoose-mariadb        Pending  standard  0s
-elder-mongoose-drupal-apache  Pending  standard  0s
-elder-mongoose-drupal-drupal  Pending  standard  0s
+NAME                 STATUS  VOLUME                                    CAPACITY  ACCESS MODES  STORAGECLASS  AGE
+wordpress-mariadb    Bound   pvc-8961f4fb-61e9-11e8-9254-84863f81f164  8Gi       RWO           standard      0s
+wordpress-wordpress  Bound   pvc-8964497f-61e9-11e8-9254-84863f81f164  10Gi      RWO           standard      0s
 
 ==> v1/Service
-NAME                    CLUSTER-IP     EXTERNAL-IP  PORT(S)                     AGE
-elder-mongoose-mariadb  10.100.44.33   <none>       3306/TCP                    0s
-elder-mongoose-drupal   10.97.213.180  <pending>    80:31363/TCP,443:31280/TCP  0s
+NAME                 TYPE          CLUSTER-IP     EXTERNAL-IP  PORT(S)                     AGE
+wordpress-mariadb    ClusterIP     10.98.90.115   <none>       3306/TCP                    0s
+wordpress-wordpress  LoadBalancer  10.109.176.21  <pending>    80:32275/TCP,443:31763/TCP  0s
+
+==> v1beta1/Deployment
+NAME                 DESIRED  CURRENT  UP-TO-DATE  AVAILABLE  AGE
+wordpress-mariadb    1        1        1           0          0s
+wordpress-wordpress  1        1        1           0          0s
+
+==> v1/Pod(related)
+NAME                                  READY  STATUS             RESTARTS  AGE
+wordpress-mariadb-579fdcc948-lg8qt    0/1    Init:0/1           0         0s
+wordpress-wordpress-7c45fd44cd-2v5rm  0/1    ContainerCreating  0         0s
+
+==> v1/Secret
+NAME                 TYPE    DATA  AGE
+wordpress-mariadb    Opaque  2     0s
+wordpress-wordpress  Opaque  2     0s
 
 
 NOTES:
-
-*******************************************************************
-*** PLEASE BE PATIENT: Drupal may take a few minutes to install ***
-*******************************************************************
-
-1. Get the Drupal URL:
+1. Get the WordPress URL:
 
   NOTE: It may take a few minutes for the LoadBalancer IP to be available.
-        Watch the status with: 'kubectl get svc --namespace default -w elder-mongoose-drupal'
+        Watch the status with: 'kubectl get svc --namespace default -w wordpress-wordpress'
 
-  export SERVICE_IP=$(kubectl get svc --namespace default elder-mongoose-drupal -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
-  echo http://$SERVICE_IP/
+  export SERVICE_IP=$(kubectl get svc --namespace default wordpress-wordpress -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+  echo http://$SERVICE_IP/admin
 
-2. Login with the following credentials
+2. Login with the following credentials to see your blog
 
   echo Username: user
-  echo Password: $(kubectl get secret --namespace default elder-mongoose-drupal -o jsonpath="{.data.drupal-password}" | base64 --decode)
--
+  echo Password: $(kubectl get secret --namespace default wordpress-wordpress -o jsonpath="{.data.wordpress-password}" | base64 --decode)
 ----
 
 === Show running "Releases"
 
 ----
 $ helm ls
-NAME          	REVISION	UPDATED                 	STATUS  	CHART        	NAMESPACE
-elder-mongoose	1       	Thu Feb 15 18:16:41 2018	DEPLOYED	drupal-0.11.3	default  
+NAME     	REVISION	UPDATED                 	STATUS  	CHART          	NAMESPACE
+wordpress	1       	Sun May 27 21:07:09 2018	DEPLOYED	wordpress-1.0.7	default  
 ----
 
-=== What was installed?
+=== Access Webpage
 
 ----
-$ kubectl get all
-NAME                            DESIRED   CURRENT   UP-TO-DATE   AVAILABLE   AGE
-deploy/elder-mongoose-drupal    1         1         1            1           4m
-deploy/elder-mongoose-mariadb   1         1         1            1           4m
-
-NAME                                   DESIRED   CURRENT   READY     AGE
-rs/elder-mongoose-drupal-66cdb756d9    1         1         1         4m
-rs/elder-mongoose-mariadb-75fb855579   1         1         1         4m
-
-NAME                            DESIRED   CURRENT   UP-TO-DATE   AVAILABLE   AGE
-deploy/elder-mongoose-drupal    1         1         1            1           4m
-deploy/elder-mongoose-mariadb   1         1         1            1           4m
-
-NAME                                   DESIRED   CURRENT   READY     AGE
-rs/elder-mongoose-drupal-66cdb756d9    1         1         1         4m
-rs/elder-mongoose-mariadb-75fb855579   1         1         1         4m
-
-NAME                                         READY     STATUS    RESTARTS   AGE
-po/elder-mongoose-drupal-66cdb756d9-jvgzr    1/1       Running   0          4m
-po/elder-mongoose-mariadb-75fb855579-nvtzd   1/1       Running   0          4m
-
-NAME                         TYPE           CLUSTER-IP      EXTERNAL-IP   PORT(S)                      AGE
-svc/elder-mongoose-drupal    LoadBalancer   10.97.213.180   <pending>     80:31363/TCP,443:31280/TCP   4m
-svc/elder-mongoose-mariadb   ClusterIP      10.100.44.33    <none>        3306/TCP                     4m
-svc/kubernetes               ClusterIP      10.96.0.1       <none>        443/TCP                      39m
+$ minikube service wordpress-wordpress --url
+http://192.168.39.166:32275
+http://192.168.39.166:31763
 ----
+
 
