@@ -3,10 +3,13 @@ BINDIR = bin
 
 SRC  = $(wildcard *.adoc)
 HTML = $(OUTDIR)/$(SRC:.adoc=.html)
+PDF  = $(OUTDIR)/$(SRC:.adoc=.pdf)
 
 default: html
 
 html: $(HTML)
+
+pdf: $(PDF)
 
 $(BINDIR)/asciidoctor-reveal.js: 
 	mkdir $(BINDIR)
@@ -20,6 +23,9 @@ $(OUTDIR)/reveal.js:
 
 $(OUTDIR)/%.html: %.adoc $(BINDIR)/asciidoctor-reveal.js $(OUTDIR)/reveal.js
 	asciidoctor -T $(BINDIR)/asciidoctor-reveal.js/templates -r asciidoctor-diagram -b revealjs $< -o $@
+
+$(OUTDIR)/%.pdf: $(OUTDIR)/%.html
+	docker run --rm -v $(PWD):/data astefanutti/decktape /data/$< /data/$@
 
 clean:
 	rm -f $(OUTDIR)/*.html
